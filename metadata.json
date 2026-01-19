@@ -1,0 +1,5 @@
+{
+  "name": "Ideal Gas Law Laboratory",
+  "description": "An interactive physics simulation for high school students to explore Isothermal, Isobaric, and Isochoric processes using the Ideal Gas Law (PV = nRT). Features real-time particle visualization, dynamic graphing, and interactive gauges.",
+  "requestFramePermissions": []
+}
