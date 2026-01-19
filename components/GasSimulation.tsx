@@ -12,7 +12,8 @@ const PARTICLE_COUNT = 80;
 const GasSimulation: React.FC<Props> = ({ state, isPaused }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
-  const requestRef = useRef<number>();
+  // Fix: Added initial value null to useRef to match expected 1 argument
+  const requestRef = useRef<number | null>(null);
 
   // Initialize particles
   useEffect(() => {
@@ -42,18 +43,27 @@ const GasSimulation: React.FC<Props> = ({ state, isPaused }) => {
     // Dimensions
     const width = canvas.width;
     const height = canvas.height;
-    const padding = 40;
+    // Increased padding from 40 to 80 to raise the cylinder
+    const paddingBottom = 80;
 
     // Simulation Container Bounds
-    // Volume corresponds to the height of the container
-    // Let's say Volume 100 L = 100 pixels, Volume 500 L = 500 pixels
     const cylinderWidth = 240;
     const containerX = (width - cylinderWidth) / 2;
-    const containerBottom = height - padding;
+    const containerBottom = height - paddingBottom;
     const pistonHeight = state.volume; // Linear mapping
     const containerTop = containerBottom - pistonHeight;
 
     ctx.clearRect(0, 0, width, height);
+
+    // Draw Decorative Base / Floor
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(0, containerBottom + 10, width, height - containerBottom);
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, containerBottom + 10);
+    ctx.lineTo(width, containerBottom + 10);
+    ctx.stroke();
 
     // Draw Container Walls
     ctx.strokeStyle = '#94a3b8';
@@ -62,10 +72,10 @@ const GasSimulation: React.FC<Props> = ({ state, isPaused }) => {
     ctx.lineCap = 'round';
     
     ctx.beginPath();
-    ctx.moveTo(containerX, containerTop - 40); // left wall extend up
+    ctx.moveTo(containerX, containerTop - 60); // left wall extend up further
     ctx.lineTo(containerX, containerBottom); // left wall
     ctx.lineTo(containerX + cylinderWidth, containerBottom); // bottom wall
-    ctx.lineTo(containerX + cylinderWidth, containerTop - 40); // right wall extend up
+    ctx.lineTo(containerX + cylinderWidth, containerTop - 60); // right wall extend up further
     ctx.stroke();
 
     // Draw Piston
@@ -77,10 +87,9 @@ const GasSimulation: React.FC<Props> = ({ state, isPaused }) => {
     
     // Piston Handle
     ctx.fillStyle = '#64748b';
-    ctx.fillRect(containerX + cylinderWidth/2 - 5, containerTop - 100, 10, 90);
+    ctx.fillRect(containerX + cylinderWidth/2 - 5, containerTop - 120, 10, 110);
 
     // Speed multiplier based on Temperature (v ∝ sqrt(T))
-    // Reference: Average kinetic energy E_k = 3/2 kT = 1/2 m v^2
     const speedFactor = Math.sqrt(state.temperature / 300) * 1.5;
     
     // Color factor based on Temperature (Blue to Red)
@@ -139,9 +148,10 @@ const GasSimulation: React.FC<Props> = ({ state, isPaused }) => {
     ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
     ctx.setLineDash([5, 5]);
     ctx.lineWidth = 1;
-    for (let h = 0; h < 600; h += 50) {
+    for (let h = 0; h <= 600; h += 50) {
       const lineY = containerBottom - h;
-      if (lineY > 50) {
+      // Only draw if within reasonable bounds of the cylinder simulation height
+      if (lineY > 20) {
         ctx.beginPath();
         ctx.moveTo(containerX - 20, lineY);
         ctx.lineTo(containerX + cylinderWidth + 20, lineY);
@@ -155,7 +165,9 @@ const GasSimulation: React.FC<Props> = ({ state, isPaused }) => {
 
   useEffect(() => {
     requestRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(requestRef.current!);
+    return () => {
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    };
   }, [state, isPaused]);
 
   // Handle Resize
